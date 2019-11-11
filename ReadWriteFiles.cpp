@@ -22,13 +22,13 @@ const char * IN_FILE = "EmployeePayInput.txt";
 // A second way to specify a file name:
 #define OUT_FILE "EmployeePayOutput.txt"
 
-
-//Neet to add consts for calculations and change the variables names in th emain to more meaningfull descripiton
+//TODO: Neet to add consts for calculations and change the variables names in th emain to more meaningfull descripiton
+const double TAXABLE_MIN = 0.0;
 const double MIN_PENSION_WITHHOLDING = 16.5;
 const int MIN_WEEKLY_HOURS = 0;
 const int MAX_WEEKLY_HOURS = 54;
 const int STANDARD_WEEK_HOURS = 40;
-const double MIN_PAY_RATE = 0.00;
+const double MIN_PAY_RATE = 0.0;
 const double MAX_PAY_RATE = 99.99;
 const int MIN_EXEMPTIONS = 0;
 const int MAX_EXEMPTIONS = 19;
@@ -41,7 +41,7 @@ double netPayTotal = 0.0;
 double pensionTotal = 0.0;
 double deductionsTotal = 0.0;
 
-double calculateGrosPay(double hours, double payRate);
+double calculateGrossPay(double hours, double payRate);
 bool isValid(long sin, double pr, int expt, double hr);
 double calculateTaxable(double gross, int exempts);
 double calculateFederal(double taxable);
@@ -101,31 +101,33 @@ int main()
 		employeesProcessed++;
 
 
-		double testGrossPay = calculateGrosPay(hoursWorked, payRate);
-		grossPayTotal += testGrossPay;
-		double testTaxable = calculateTaxable(testGrossPay, numberOfExemptions);
-		if (testTaxable <= 0)  //TODO add const for this
-		{
-			testTaxable = 0.0; //set to minimum;
-		}
-		double testFederal = calculateFederal(testTaxable);
-		double testProvincial = calculateProvincial(testFederal);
+		double grossPay = calculateGrossPay(hoursWorked, payRate);
+		grossPayTotal += grossPay;
+		double taxable = calculateTaxable(grossPay, numberOfExemptions);
 		
-		double testPenWholding = calculatePensionWithholdings(testGrossPay);
-		pensionTotal += testPenWholding;
+		if (taxable <= TAXABLE_MIN) 
+		{
+			taxable = TAXABLE_MIN;
+		}
+
+		double federal = calculateFederal(taxable);
+		double provincial = calculateProvincial(federal);
+		
+		double pensionWithholdings = calculatePensionWithholdings(grossPay);
+		pensionTotal += pensionWithholdings;
 		
 		//federal + provincial + pensionWithholdings;
-		double testAllDeductions = round_2nPlaces(testFederal + testProvincial + testPenWholding, 2);
-		deductionsTotal += testAllDeductions;
+		double allDeductions = round_2nPlaces(federal + provincial + pensionWithholdings, 2);
+		deductionsTotal += allDeductions;
 		
-		double testNetPay = calculateNetPay(testGrossPay, testFederal, testProvincial, testPenWholding);
-		netPayTotal += testNetPay;
+		double netPay = calculateNetPay(grossPay, federal, provincial, pensionWithholdings);
+		netPayTotal += netPay;
 
 		outs << setw(20) << left << socialInsuranceNum << setprecision(2) << fixed << 
-					 setw(12) << right << testGrossPay << 
-					 setw(11) << right << testNetPay << 
-					 setw(11) << right << testPenWholding << 
-					 setw(14) << right << testAllDeductions;
+					 setw(12) << right << grossPay << 
+					 setw(11) << right << netPay << 
+					 setw(11) << right << pensionWithholdings << 
+					 setw(14) << right << allDeductions;
 		outs << endl;
 	}
 
@@ -146,7 +148,7 @@ int main()
 	cout << '\n' << endl;
 }
 
-double calculateGrosPay(double hours, double payRate) 
+double calculateGrossPay(double hours, double payRate) 
 {
 	double grossPay;
 	if (hours <= STANDARD_WEEK_HOURS)
@@ -180,7 +182,6 @@ double calculateTaxable(double gross, int exempts)
 
 double calculateProvincial(double federal)
 {
-	//(153.32 * 35) / 100 = 53.66;
 	double tempFederal= (federal * 35) / 100;
 	return round_2nPlaces(tempFederal, 2);
 }
@@ -202,13 +203,14 @@ double calculateNetPay(double gross, double federal, double provincial, double p
 
 bool isValid(long sin, double pr, int expt, double hw) 
 {
+	bool totalValidationResult = true;
 	bool results[] = {true,true,true,true};  // 4 validations in total;
-	bool result = false;
-	//check if SIN starts with '0';
+	
+	//validating social insurance #;
 	auto temp = to_string(sin);
 	if (9 == temp.length())
 	{
-		result = true;
+		results[0] = true;
 	}
 	else
 	{
@@ -219,7 +221,7 @@ bool isValid(long sin, double pr, int expt, double hw)
 	//check pay rate;
 	if ((pr >= MIN_PAY_RATE) & (pr <= MAX_PAY_RATE))		//bitwise comparison => no shortcircutting; 
  	{
-		result = true;
+		results[1] = true;
 	}
 	else 
 	{
@@ -231,7 +233,7 @@ bool isValid(long sin, double pr, int expt, double hw)
 	//check exemptions; min 0 max 19
 	if ((expt >= MIN_EXEMPTIONS) & (expt <= MAX_EXEMPTIONS))		//bitwise comparison => no shortcircutting; 
 	{
-		result = true;
+		results[2] = true;
 	}
 	else
 	{
@@ -242,7 +244,7 @@ bool isValid(long sin, double pr, int expt, double hw)
 	//check hours worked => no more than 54 hours a week;
 	if ((hw >= MIN_WEEKLY_HOURS) & (hw <= MAX_WEEKLY_HOURS))
 	{
-		result = true;
+		results[3] = true;
 	}
 	else
 	{
@@ -255,17 +257,16 @@ bool isValid(long sin, double pr, int expt, double hw)
 	{
 		if (!i) //if any of the validation fails => exit;
 		{
-			result = false;
+			totalValidationResult = false;
 			break;
 		}
 	}
-
-	return result;
+	return totalValidationResult;
 }
 
 double round_2nPlaces(double val, int n_places)
 {
-	double myVal = floor(val * 100 + 0.5) / 100;
-	return myVal;
+	double result = floor(val * 100 + 0.5) / 100;
+	return result;
 }
 

@@ -22,6 +22,8 @@ const char * IN_FILE = "EmployeePayInput.txt";
 // A second way to specify a file name:
 #define OUT_FILE "EmployeePayOutput.txt"
 
+
+//Neet to add consts for calculations and change the variables names in th emain to more meaningfull descripiton
 const double MIN_PENSION_WITHHOLDING = 16.5;
 const int MIN_WEEKLY_HOURS = 0;
 const int MAX_WEEKLY_HOURS = 54;

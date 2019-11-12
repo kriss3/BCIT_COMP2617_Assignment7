@@ -1,9 +1,10 @@
-//
 // Calculate gross pay, net pay, pension and deductions for employees of Rogers Hostpital Supplies Company.
-//
+// Assignment 7;
+// Krzysztof Szczurowski
+// BCIT: A01013054
+// Updated on November 1st 2019
 // Bob Langelaan
 // March 9, 2015
-//
 
 #include <iostream>
 #include <conio.h>  // Required for _getch() function
@@ -41,13 +42,21 @@ double netPayTotal = 0.0;
 double pensionTotal = 0.0;
 double deductionsTotal = 0.0;
 
+//calculates gross pay;
 double calculateGrossPay(double hours, double payRate);
+//validates input parameters coming from the input file;
 bool isValid(long sin, double pr, int expt, double hr);
+//calculates taxable income;
 double calculateTaxable(double gross, int exempts);
+//calculates federal income tax;
 double calculateFederal(double taxable);
+//calculates privincial income tax;
 double calculateProvincial(double federal);
+//calculates privincial withholdings;
 double calculatePensionWithholdings(double gross);
+//calculates net pay;
 double calculateNetPay(double gross, double federal, double provincial, double pension);
+//utility function for rounding;
 double round_2nPlaces(double val, int n_places);
 
 
@@ -84,6 +93,7 @@ int main()
 		return -2; //error return code
 	}
 
+	//Print file header and gridView header to the output file;
 	outs << printFileHeader;
 	outs << printGridHeader;
 
@@ -93,6 +103,7 @@ int main()
 		// Read in other data for the employee
 		ins >> socialInsuranceNum >> payRate >> numberOfExemptions >> hoursWorked;
 
+		//validate values coming from the input file;
 		if (!isValid(socialInsuranceNum,payRate,numberOfExemptions,hoursWorked)) 
 		{
 			continue;
@@ -105,6 +116,7 @@ int main()
 		grossPayTotal += grossPay;
 		double taxable = calculateTaxable(grossPay, numberOfExemptions);
 		
+		//check for negative and ZERO taxable income;
 		if (taxable <= TAXABLE_MIN) 
 		{
 			taxable = TAXABLE_MIN;
@@ -123,6 +135,7 @@ int main()
 		double netPay = calculateNetPay(grossPay, federal, provincial, pensionWithholdings);
 		netPayTotal += netPay;
 
+		//Print gridView with calcualted values;
 		outs << setw(20) << left << socialInsuranceNum << setprecision(2) << fixed << 
 					 setw(12) << right << grossPay << 
 					 setw(11) << right << netPay << 
@@ -134,6 +147,8 @@ int main()
 	outs << endl;
 	outs << endl;
 
+
+	//Print Summary and calculated values;
 	outs << "Summary\n------\n\n";
 	outs << setw(45) << left << "Number of employees processed:" << setw(7) << right << employeesProcessed << endl;
 	outs << setw(45) << left << "Total gross pay for all employees:" << setw(7) << right << setprecision(2) << fixed << grossPayTotal << endl;
@@ -148,6 +163,10 @@ int main()
 	cout << '\n' << endl;
 }
 
+//calculate gross pay per employee;
+//takes double as hours workd and double as pay rate;
+//returns double as calculated gross pay;
+//function calculate standard and extra hours worked;
 double calculateGrossPay(double hours, double payRate) 
 {
 	double grossPay;
@@ -166,6 +185,9 @@ double calculateGrossPay(double hours, double payRate)
 	return round_2nPlaces(grossPay, 2);
 }
 
+//calcuated federal income tax;
+//takes double as taxable income;
+//retuns double as calculated federal income tax;
 double calculateFederal(double taxable)
 {
 	//federal = taxable * (0.14 + (0.00023  * taxable))
@@ -173,19 +195,28 @@ double calculateFederal(double taxable)
 	return round_2nPlaces(tempFederal, 2);
 }
 
+//calculate taxable income;
+//takes gross - gross income and int as number of exemptions;
+//returns double as calculated taxable income;
 double calculateTaxable(double gross, int exempts) 
 {
 	//taxable = gross - ($14.00 * exempt) - $11.00
-	double tempTaxable = gross - (14.00 * exempts) - 11.0;
+	double tempTaxable = gross - (14.00 * exempts) - 11.0; //magic numbers keeping them here as Product Owner did not clarified what them mean;
 	return round_2nPlaces(tempTaxable, 2);
 }
 
+//calculate provincial tax;
+//takes federal calculated tax value;
+//returns double as calculated provincial tax;
 double calculateProvincial(double federal)
 {
 	double tempFederal= (federal * 35) / 100;
 	return round_2nPlaces(tempFederal, 2);
 }
 
+//calculate pension withholdings
+//takes gross - gross calculated pay;
+//return double as calculated pension withholdings;
 double calculatePensionWithholdings(double gross)
 {
 	//16.5 or 7.7% of gross whichever is lower;
@@ -194,6 +225,9 @@ double calculatePensionWithholdings(double gross)
 	return (MIN_PENSION_WITHHOLDING < pwh2digits) ? MIN_PENSION_WITHHOLDING : pwh2digits;	
 }
 
+//calculate net pay per employee;
+//takes: gross - gross pay, federal calculated tax - federal, provincial - provincial calculated tax and pension - calculated pension;
+//returns double as calculated net pay per employee;
 double calculateNetPay(double gross, double federal, double provincial, double pension)
 {
 	//Net Pay = GrossPay - All deductions;
@@ -201,6 +235,9 @@ double calculateNetPay(double gross, double federal, double provincial, double p
 	return round_2nPlaces(tempGross, 2);
 }
 
+//single validation method for all 4 validations required:
+//takes: social insurance #, pr - pay rate, extp - exemption and hw -hours worked;
+//returns: boolean indicating wheter a record (file line) has valid values;
 bool isValid(long sin, double pr, int expt, double hw) 
 {
 	bool totalValidationResult = true;
@@ -264,6 +301,8 @@ bool isValid(long sin, double pr, int expt, double hw)
 	return totalValidationResult;
 }
 
+//Utility function to round double to dwo decimal places correctly
+//rounds up on +0.5 and up and down on up to 0.5 
 double round_2nPlaces(double val, int n_places)
 {
 	double result = floor(val * 100 + 0.5) / 100;
